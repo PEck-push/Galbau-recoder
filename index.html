@@ -1,19 +1,220 @@
-<div class="recorder-info" style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-  <h3>🎙️ So funktioniert die Aufnahme</h3>
-  <ul style="line-height: 1.6;">
-    <li><strong>Sprechen & Pausen:</strong> Sprich normal und deutlich. <strong>Achtung:</strong> Eine längere Sprechpause beendet die Aufnahme automatisch und sendet die Daten ab!</li>
-    <li><strong>Wichtige Überschriften:</strong> Damit das System deine Angaben richtig versteht, nutze bitte folgende Schlüsselwörter beim Sprechen:</li>
-      <ul>
-        <li>Sag <em>"Kunde:"</em> gefolgt vom Namen.</li>
-        <li>Sag <em>"Projekt:"</em> oder <em>"Thema:"</em> für die Zuordnung.</li>
-        <li>Sag <em>"Aufgabe:"</em> für das, was zu tun ist.</li>
-      </ul>
-  </ul>
-  <p style="font-size: 0.9em; color: #555;"><em>Beispiel: "Kunde: Max Mustermann. Thema: Webseite. Aufgabe: Bitte neues Logo einfügen."</em></p>
-</div>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gewerke-Recorder für n8n</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 650px; 
+            margin: 40px auto; 
+            padding: 20px; 
+            line-height: 1.6; 
+            color: #333; 
+        }
+        .info-box { 
+            background: #f0f7ff; 
+            border-left: 5px solid #0066cc; 
+            padding: 20px; 
+            border-radius: 4px; 
+            margin-bottom: 25px; 
+        }
+        .info-box h3 { 
+            margin-top: 0; 
+            color: #0066cc; 
+            font-size: 1.2em;
+        }
+        .gewerke-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #cce0ff;
+            font-size: 0.9em;
+            margin: 15px 0;
+        }
+        .example {
+            font-style: italic;
+            color: #555;
+            background: #e6f2ff;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        button { 
+            display: block; 
+            width: 100%; 
+            padding: 15px; 
+            font-size: 18px; 
+            font-weight: bold;
+            background-color: #e74c3c; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: background 0.3s; 
+        }
+        button:hover { 
+            background-color: #c0392b; 
+        }
+        button:disabled { 
+            background-color: #95a5a6; 
+            cursor: not-allowed; 
+        }
+        #status { 
+            margin-top: 20px; 
+            font-weight: bold; 
+            text-align: center; 
+            padding: 10px; 
+            border-radius: 4px; 
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .recording { 
+            background: #fff3cd; 
+            color: #856404; 
+            border: 1px solid #ffeeba;
+            animation: pulse 1.5s infinite; 
+        }
+        @keyframes pulse { 
+            0% { opacity: 1; } 
+            50% { opacity: 0.5; } 
+            100% { opacity: 1; } 
+        }
+        #transcript { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6;
+            border-radius: 4px; 
+            display: none; 
+        }
+    </style>
+</head>
+<body>
 
-<button id="startRecordBtn" style="padding: 10px 20px; font-size: 16px; background-color: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">
-  🔴 Aufnahme starten
-</button>
+    <div class="info-box">
+        <h3>🎙️ So funktioniert die Mängelerfassung</h3>
+        <p><strong>Wichtig:</strong> Eine längere Sprechpause beendet die Aufnahme automatisch und sendet die Daten ab!</p>
+        <p>Damit das System die Aufgaben richtig sortiert, nenne bitte immer zuerst das <strong>Gewerk</strong>, sag das Wort <strong>"Doppelpunkt"</strong> und beschreibe dann die Aufgabe. Du kannst mehrere Gewerke am Stück aufzählen.</p>
+        
+        <strong>Erlaubte Gewerke:</strong>
+        <div class="gewerke-grid">
+            <div>• Elektrikerarbeiten</div>
+            <div>• Sanitärinstallationen</div>
+            <div>• Fliesenlegerarbeiten</div>
+            <div>• Malerarbeiten</div>
+            <div>• Anstreicharbeiten</div>
+            <div>• Tischlerarbeiten</div>
+            <div>• Bodenleger</div>
+            <div>• diverse Arbeiten</div>
+            <div>• Reinigung</div>
+        </div>
 
-<div id="statusMessage" style="margin-top: 10px; font-weight: bold;"></div>
+        <div class="example">
+            <strong>Beispiel:</strong> "Sanitärinstallationen Doppelpunkt Der Siphon tropft. Elektrikerarbeiten Doppelpunkt Steckdose im Flur fehlt."
+        </div>
+    </div>
+
+    <button id="recordBtn">🔴 Aufnahme starten</button>
+
+    <div id="status">Bereit. Klicke auf Start.</div>
+    <div id="transcript"></div>
+
+    <script>
+        const WEBHOOK_URL = 'https://automations.solvid.ai/webhook-test/b256bc7a-cd19-4608-a493-cd0ac77dcdca';
+        
+        const recordBtn = document.getElementById('recordBtn');
+        const statusDiv = document.getElementById('status');
+        const transcriptDiv = document.getElementById('transcript');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            statusDiv.textContent = "Dein Browser unterstützt diese Sprachfunktion leider nicht. Bitte nutze Chrome, Safari oder Edge.";
+            statusDiv.className = 'error';
+            recordBtn.disabled = true;
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'de-DE'; 
+            recognition.interimResults = false; 
+
+            recordBtn.addEventListener('click', () => {
+                recognition.start();
+            });
+
+            recognition.onstart = function() {
+                recordBtn.textContent = "Aufnahme läuft... (Sprechen!)";
+                recordBtn.disabled = true;
+                statusDiv.textContent = "Ich höre zu... (Eine Pause beendet die Aufnahme)";
+                statusDiv.className = 'recording';
+                transcriptDiv.style.display = 'none';
+            };
+
+            recognition.onresult = function(event) {
+                // Den Text aus der Sprach-Engine holen
+                let rawText = event.results[0][0].transcript;
+                
+                // Sicherheitshalber: Falls die Spracherkennung das Wort "Doppelpunkt" nicht umwandelt, 
+                // fixen wir das hier im Code, damit dein n8n-Skript glücklich ist.
+                let finalText = rawText.replace(/Doppelpunkt/gi, ":");
+                
+                transcriptDiv.innerHTML = "<strong>Übermittelter Text:</strong><br><br><i>" + finalText + "</i>";
+                transcriptDiv.style.display = 'block';
+                
+                statusDiv.textContent = "Text verarbeitet! Sende Daten an System...";
+                statusDiv.className = '';
+                
+                // An n8n senden
+                sendToN8n(finalText);
+            };
+
+            recognition.onerror = function(event) {
+                statusDiv.textContent = "Fehler bei der Aufnahme: " + event.error;
+                statusDiv.className = 'error';
+                recordBtn.textContent = "🔴 Aufnahme starten";
+                recordBtn.disabled = false;
+            };
+
+            recognition.onend = function() {
+                recordBtn.textContent = "🔴 Aufnahme starten";
+                recordBtn.disabled = false;
+                if (statusDiv.className === 'recording') {
+                    statusDiv.textContent = "Aufnahme beendet (Nichts verstanden).";
+                    statusDiv.className = '';
+                }
+            };
+        }
+
+        async function sendToN8n(textData) {
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        // Hier ist der entscheidende Key "text", den dein n8n Code (item.text) sucht!
+                        text: textData, 
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                if (response.ok) {
+                    statusDiv.textContent = "✅ Erfolgreich an das System übermittelt!";
+                    statusDiv.className = 'success';
+                } else {
+                    statusDiv.textContent = "❌ Fehler beim Senden an n8n.";
+                    statusDiv.className = 'error';
+                }
+            } catch (error) {
+                statusDiv.textContent = "❌ Verbindungsfehler zum Server.";
+                statusDiv.className = 'error';
+                console.error("Webhook-Fehler:", error);
+            }
+        }
+    </script>
+</body>
+</html>
