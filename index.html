@@ -167,40 +167,51 @@
         const toggleRulesBtn = document.getElementById('toggleRulesBtn');
         const rulesDiv   = document.getElementById('rulesDiv');
 
-        // ─── NETLIFY IDENTITY ─────────────────────────────────────────
-        netlifyIdentity.on('init', user => {
-            if (!user) {
-                netlifyIdentity.open('login');
-                btn.disabled = true;
-                status.innerText = 'Bitte einloggen.';
-            } else {
-                onLogin(user);
-            }
-        });
+// ─── NETLIFY IDENTITY ─────────────────────────────────────────
 
-        netlifyIdentity.on('login', user => {
-            netlifyIdentity.close();
-            onLogin(user);
-        });
+// FIX: Invite-Token aus der URL abfangen
+netlifyIdentity.on('init', user => {
+    // Prüfen ob ein invite_token in der URL steckt
+    const hash = window.location.hash;
+    if (hash && hash.includes('invite_token')) {
+        netlifyIdentity.open();
+        return;
+    }
 
-        netlifyIdentity.on('logout', () => {
-            btn.disabled = true;
-            status.innerText = 'Ausgeloggt.';
-            status.className = '';
-            userInfo.style.display = 'none';
-            netlifyIdentity.open('login');
-        });
+    if (!user) {
+        netlifyIdentity.open('login');
+        btn.disabled = true;
+        status.innerText = 'Bitte einloggen.';
+    } else {
+        onLogin(user);
+    }
+});
 
-        function onLogin(user) {
-            btn.disabled = false;
-            status.innerText = 'Bereit. Sprich alle Gewerke ein.';
-            status.className = '';
-            userEmail.innerText = user.email;
-            userInfo.style.display = 'block';
-        }
+netlifyIdentity.on('login', user => {
+    netlifyIdentity.close();
+    // Hash aus der URL entfernen nach erfolgreichem Login
+    window.history.replaceState(null, '', window.location.pathname);
+    onLogin(user);
+});
 
-        logoutBtn.addEventListener('click', () => netlifyIdentity.logout());
-        netlifyIdentity.init();
+netlifyIdentity.on('logout', () => {
+    btn.disabled = true;
+    status.innerText = 'Ausgeloggt.';
+    status.className = '';
+    userInfo.style.display = 'none';
+    netlifyIdentity.open('login');
+});
+
+function onLogin(user) {
+    btn.disabled = false;
+    status.innerText = 'Bereit. Sprich alle Gewerke ein.';
+    status.className = '';
+    userEmail.innerText = user.email;
+    userInfo.style.display = 'block';
+}
+
+logoutBtn.addEventListener('click', () => netlifyIdentity.logout());
+netlifyIdentity.init();
         // ─────────────────────────────────────────────────────────────
 
         // ─── ANLEITUNG ────────────────────────────────────────────────
