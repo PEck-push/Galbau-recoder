@@ -190,3 +190,50 @@
                     recorder.onstop = async () => {
                         status.innerText = "KI verarbeitet lokal...";
                         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        const transcriber = await window.transformers.pipeline('automatic-speech-recognition', 'Xenova/whisper-base');
+                        const output = await transcriber(audioUrl, { language: 'german' });
+                        
+                        status.innerText = "Sende an Server...";
+                        
+                        let finalTranskript = output.text;
+
+                        // AUTOMATISCHER DOPPELPUNKT: 
+                        // Sucht im Text nach den Gewerken und hängt einen Doppelpunkt an, falls noch keiner da ist.
+                        gewerkeListe.forEach(gewerk => {
+                            // "gi" ignoriert Groß-/Kleinschreibung beim Suchen
+                            const regex = new RegExp(gewerk + "(?!:)", "gi");
+                            finalTranskript = finalTranskript.replace(regex, gewerk + ": ");
+                        });
+
+                        await fetch(WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            // Hier ist der Schlüssel 'text', den n8n sucht
+                            body: JSON.stringify({ text: finalTranskript })
+                        });
+                        
+                        status.innerText = "Erfolgreich übertragen!";
+                        btn.innerText = "START"; 
+                        btn.disabled = false;
+                        btn.style.backgroundColor = 'var(--text-main)'; // Zurück zum Original
+                        
+                        setTimeout(() => {
+                            if(btn.innerText === "START") status.innerText = "Bereit für das nächste Protokoll.";
+                        }, 4000);
+                    };
+                    
+                    recorder.start();
+                    btn.innerText = "STOPP"; 
+                    btn.classList.add('recording');
+                    status.innerText = "Aufnahme läuft...";
+                } catch (error) {
+                    status.style.color = 'var(--galbau-red)';
+                    status.innerText = "Mikrofon-Zugriff verweigert!";
+                }
+            }
+        };
+    </script>
+</body>
+</html>
