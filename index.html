@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Galbau | Voice</title>
-    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1"></script>
     <style>
         :root {
             --galbau-red: #D21E1E;
@@ -18,9 +17,7 @@
             font-family: var(--font-family);
             background-color: var(--bg-color);
             color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+            display: flex; flex-direction: column;
             height: 100dvh;
             justify-content: space-between;
             padding: 8vh 6vw;
@@ -30,44 +27,19 @@
         h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.05em; text-transform: uppercase; margin-bottom: 5px; }
         h1 span { color: var(--galbau-red); }
         .subtitle { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-bottom: 15px; }
-
         #toggleRulesBtn {
             background: none; border: none; color: var(--galbau-red);
             font-family: var(--font-family); font-size: 0.9rem; font-weight: bold;
-            cursor: pointer; padding: 5px 0; text-align: left;
+            cursor: pointer; padding: 5px 0;
         }
         #rulesDiv {
             margin-top: 15px; padding: 15px; background-color: #EFEFEF;
-            border-radius: 4px; font-size: 0.85rem; color: var(--text-main); line-height: 1.5;
+            border-radius: 4px; font-size: 0.85rem; line-height: 1.5; display: none;
         }
         #rulesDiv h3 { font-size: 1rem; margin-bottom: 8px; }
         #rulesDiv ul { margin-left: 20px; }
         #rulesDiv li { margin-bottom: 5px; }
-
-        /* MODEL LOADING BANNER */
-        #modelBanner {
-            margin-top: 12px;
-            padding: 10px 14px;
-            background-color: #FFF8E1;
-            border-left: 3px solid #F9A825;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: #5D4037;
-            display: none;
-        }
-        #modelBanner.ready {
-            background-color: #E8F5E9;
-            border-left-color: #388E3C;
-            color: #1B5E20;
-        }
-        #modelBanner.error {
-            background-color: #FFEBEE;
-            border-left-color: var(--galbau-red);
-            color: #B71C1C;
-        }
-
         main { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-
         #recordBtn {
             width: 65vw; height: 65vw;
             max-width: 280px; max-height: 280px;
@@ -77,29 +49,26 @@
             font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1em;
             border: none; cursor: pointer;
             transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
-        #recordBtn:disabled { background-color: #CCCCCC; cursor: default; }
         #recordBtn.recording {
             background-color: var(--galbau-red);
             transform: scale(0.95);
             animation: pulse 2s infinite;
         }
+        #recordBtn:disabled { background-color: #CCCCCC; cursor: default; }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(210, 30, 30, 0.4); }
-            70% { box-shadow: 0 0 0 30px rgba(210, 30, 30, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(210, 30, 30, 0); }
+            0%   { box-shadow: 0 0 0 0 rgba(210,30,30,0.4); }
+            70%  { box-shadow: 0 0 0 30px rgba(210,30,30,0); }
+            100% { box-shadow: 0 0 0 0 rgba(210,30,30,0); }
         }
-
         #status {
             margin-top: 40px; font-size: 1.1rem; font-weight: 500;
-            text-align: center; min-height: 60px; color: var(--text-main);
+            text-align: center; min-height: 60px;
         }
         #status.error { color: var(--galbau-red); }
-
-        footer { width: 100%; height: 20px; }
+        footer { height: 20px; }
     </style>
 </head>
 <body>
@@ -107,37 +76,29 @@
         <h1>Galbau<span>.</span></h1>
         <div class="subtitle">Sprachprotokoll</div>
         <button id="toggleRulesBtn">📖 Anleitung einblenden</button>
-        <div id="rulesDiv" style="display: none;">
+        <div id="rulesDiv">
             <h3>So funktioniert die Aufnahme</h3>
             <ul>
-                <li><strong>Natürlich sprechen:</strong> Nenne das Gewerk, dann die Aufgaben. Das System sortiert alles automatisch.</li>
+                <li><strong>Natürlich sprechen:</strong> Nenne das Gewerk, dann die Aufgaben.</li>
                 <li><strong>Beispiel:</strong> <em>"Sanitärinstallationen der Siphon tropft Elektrikerarbeiten die Steckdose fehlt"</em></li>
                 <li><strong>Zulässige Gewerke:</strong> Elektrikerarbeiten, Sanitärinstallationen, Fliesenlegerarbeiten, Malerarbeiten, Anstreicharbeiten, Tischlerarbeiten, Bodenleger, diverse Arbeiten, Reinigung.</li>
             </ul>
         </div>
-        <!-- FIX: Status-Banner für Model-Loading -->
-        <div id="modelBanner">KI-Modell wird geladen — bitte kurz warten...</div>
     </header>
 
     <main>
-        <button id="recordBtn" disabled>LADEN</button>
-        <div id="status">KI-Modell wird initialisiert...</div>
+        <button id="recordBtn">START</button>
+        <div id="status">Bereit. Sprich alle Gewerke ein.</div>
     </main>
 
     <footer></footer>
 
     <script>
+        // Webhook empfängt die Audiodatei — Whisper läuft in n8n via OpenAI
         const WEBHOOK_URL = 'https://automations.solvid.ai/webhook/b256bc7a-cd19-4608-a493-cd0ac77dcdca';
-
-        const gewerkeListe = [
-            "Elektrikerarbeiten", "Sanitärinstallationen", "Fliesenlegerarbeiten",
-            "Malerarbeiten", "Anstreicharbeiten", "Tischlerarbeiten",
-            "Bodenleger", "diverse Arbeiten", "Reinigung"
-        ];
 
         const toggleRulesBtn = document.getElementById('toggleRulesBtn');
         const rulesDiv = document.getElementById('rulesDiv');
-        const modelBanner = document.getElementById('modelBanner');
         const btn = document.getElementById('recordBtn');
         const status = document.getElementById('status');
 
@@ -147,115 +108,80 @@
             toggleRulesBtn.innerText = open ? '📖 Anleitung einblenden' : '📖 Anleitung ausblenden';
         });
 
-        // ============================================================
-        // FIX #1: Pipeline EINMALIG beim Laden initialisieren.
-        // Vorher wurde das ~150MB Modell nach JEDER Aufnahme neu geladen.
-        // ============================================================
-        let transcriber = null;
-
-        async function initModel() {
-            modelBanner.style.display = 'block';
-            modelBanner.className = '';
-            try {
-                transcriber = await window.transformers.pipeline(
-                    'automatic-speech-recognition',
-                    'Xenova/whisper-base'
-                );
-                modelBanner.innerText = 'KI-Modell bereit.';
-                modelBanner.className = 'ready';
-                btn.innerText = 'START';
-                btn.disabled = false;
-                status.innerText = 'Bereit. Sprich alle Gewerke ein.';
-                setTimeout(() => { modelBanner.style.display = 'none'; }, 3000);
-            } catch (e) {
-                modelBanner.innerText = 'Modell konnte nicht geladen werden. Seite neu laden.';
-                modelBanner.className = 'error';
-                status.innerText = 'Fehler beim Laden.';
-                status.className = 'error';
-            }
-        }
-
         let recorder;
         let audioChunks = [];
 
         btn.onclick = async () => {
-            if (!transcriber) return;
-
             if (recorder && recorder.state === 'recording') {
                 recorder.stop();
                 btn.innerText = 'WAIT';
                 btn.disabled = true;
                 btn.classList.remove('recording');
-            } else {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                return;
+            }
 
-                    // FIX #2: Korrekter MIME-Type — kein 'audio/wav' forcieren.
-                    // MediaRecorder liefert nativ webm/ogg, nicht WAV.
-                    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
-                    recorder = new MediaRecorder(stream, { mimeType });
-                    audioChunks = [];
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+                recorder = new MediaRecorder(stream, { mimeType });
+                audioChunks = [];
 
-                    recorder.ondataavailable = e => audioChunks.push(e.data);
+                recorder.ondataavailable = e => audioChunks.push(e.data);
 
-                    recorder.onstop = async () => {
-                        status.innerText = 'KI verarbeitet...';
-                        status.className = '';
+                recorder.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    status.innerText = 'Wird übertragen...';
+                    status.className = '';
 
-                        // Tracks stoppen damit Mikrofon-Indikator erlischt
-                        stream.getTracks().forEach(t => t.stop());
+                    const audioBlob = new Blob(audioChunks, { type: mimeType });
 
-                        const audioBlob = new Blob(audioChunks, { type: mimeType });
-                        const audioUrl = URL.createObjectURL(audioBlob);
+                    // Audio direkt als Binary senden — n8n übernimmt Transkription
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'memo.webm');
 
-                        try {
-                            // FIX #1: Wiederverwendet die bereits geladene Pipeline
-                            const output = await transcriber(audioUrl, { language: 'german' });
-                            URL.revokeObjectURL(audioUrl);
+                    try {
+                        const response = await fetch(WEBHOOK_URL, {
+                            method: 'POST',
+                            body: formData
+                        });
 
-                            let finalTranskript = output.text;
-                            gewerkeListe.forEach(gewerk => {
-                                const regex = new RegExp(gewerk + '(?!:)', 'gi');
-                                finalTranskript = finalTranskript.replace(regex, gewerk + ': ');
-                            });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-                            status.innerText = 'Sende an Server...';
-                            await fetch(WEBHOOK_URL, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ text: finalTranskript })
-                            });
-
-                            status.innerText = 'Erfolgreich übertragen!';
-                        } catch (err) {
-                            status.innerText = 'Fehler bei Verarbeitung oder Übertragung.';
-                            status.className = 'error';
-                            console.error(err);
-                        }
-
-                        btn.innerText = 'START';
-                        btn.disabled = false;
-                        btn.style.backgroundColor = '';
+                        status.innerText = 'Erfolgreich übertragen!';
                         setTimeout(() => {
-                            if (btn.innerText === 'START') {
-                                status.innerText = 'Bereit für das nächste Protokoll.';
-                                status.className = '';
-                            }
+                            status.innerText = 'Bereit für das nächste Protokoll.';
                         }, 4000);
-                    };
+                    } catch (err) {
+                        status.innerText = `Übertragung fehlgeschlagen: ${err.message}`;
+                        status.className = 'error';
+                    }
 
-                    recorder.start();
-                    btn.innerText = 'STOPP';
-                    btn.classList.add('recording');
-                    status.innerText = 'Aufnahme läuft...';
-                } catch (error) {
-                    status.innerText = 'Mikrofon-Zugriff verweigert!';
-                    status.className = 'error';
-                }
+                    btn.innerText = 'START';
+                    btn.disabled = false;
+                };
+
+                recorder.start();
+                btn.innerText = 'STOPP';
+                btn.classList.add('recording');
+                status.innerText = 'Aufnahme läuft...';
+
+            } catch (err) {
+                status.innerText = 'Mikrofon-Zugriff verweigert!';
+                status.className = 'error';
             }
         };
-
-        initModel();
     </script>
 </body>
 </html>
+```
+
+---
+
+## Was in n8n jetzt dazukommt
+
+Der Webhook-Node muss auf **Binary Data** umgestellt werden, dann:
+```
+Webhook (Binary)
+→ OpenAI Node: Transcribe (Whisper-1, language: de)
+→ LLM-Node: Normalisierung in dein Zielformat (System Prompt von oben)
+→ dein Code-Node (unverändert)
