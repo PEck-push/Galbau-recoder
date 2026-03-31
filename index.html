@@ -127,8 +127,8 @@
         <div id="rulesDiv" style="display: none;">
             <h3>So funktioniert die Aufnahme</h3>
             <ul>
-                <li><strong>Start & Stopp:</strong> Klicke auf START, sprich deutlich und beende die Aufnahme mit STOPP.</li>
-                <li><strong>Syntax:</strong> Damit das System alles richtig zuordnet, nenne bitte immer zuerst das <strong>Gewerk</strong>, sag das Wort <strong>"Doppelpunkt"</strong> und beschreibe dann die Aufgabe.</li>
+                <li><strong>Natürlich sprechen:</strong> Nenne einfach das Gewerk und sprich direkt die Aufgaben ein. Danach kommt das nächste Gewerk usw. Das System sortiert alles automatisch.</li>
+                <li><strong>Beispiel:</strong> <em>"Sanitärinstallationen der Siphon tropft Elektrikerarbeiten die Steckdose fehlt"</em></li>
                 <li><strong>Zulässige Gewerke:</strong> Elektrikerarbeiten, Sanitärinstallationen, Fliesenlegerarbeiten, Malerarbeiten, Anstreicharbeiten, Tischlerarbeiten, Bodenleger, diverse Arbeiten, Reinigung.</li>
             </ul>
         </div>
@@ -159,6 +159,13 @@
 
         // --- DEINE FESTE WEBHOOK URL ---
         const WEBHOOK_URL = 'https://automations.solvid.ai/webhook-test/b256bc7a-cd19-4608-a493-cd0ac77dcdca';
+        
+        // --- GEWERKE LISTE FÜR AUTOMATISCHEN DOPPELPUNKT ---
+        const gewerkeListe = [
+            "Elektrikerarbeiten", "Sanitärinstallationen", "Fliesenlegerarbeiten",
+            "Malerarbeiten", "Anstreicharbeiten", "Tischlerarbeiten",
+            "Bodenleger", "diverse Arbeiten", "Reinigung"
+        ];
 
         let recorder; 
         let audioChunks = [];
@@ -183,43 +190,3 @@
                     recorder.onstop = async () => {
                         status.innerText = "KI verarbeitet lokal...";
                         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        
-                        const transcriber = await window.transformers.pipeline('automatic-speech-recognition', 'Xenova/whisper-base');
-                        const output = await transcriber(audioUrl, { language: 'german' });
-                        
-                        status.innerText = "Sende an Server...";
-                        
-                        // Fix: "Doppelpunkt" ersetzen, falls Whisper das Wort ausschreibt
-                        let finalTranskript = output.text.replace(/Doppelpunkt/gi, ":");
-
-                        await fetch(WEBHOOK_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            // Hier ist der Schlüssel 'text', den n8n sucht
-                            body: JSON.stringify({ text: finalTranskript })
-                        });
-                        
-                        status.innerText = "Erfolgreich übertragen!";
-                        btn.innerText = "START"; 
-                        btn.disabled = false;
-                        btn.style.backgroundColor = 'var(--text-main)'; // Zurück zum Original
-                        
-                        setTimeout(() => {
-                            if(btn.innerText === "START") status.innerText = "Bereit für das nächste Protokoll.";
-                        }, 4000);
-                    };
-                    
-                    recorder.start();
-                    btn.innerText = "STOPP"; 
-                    btn.classList.add('recording');
-                    status.innerText = "Aufnahme läuft...";
-                } catch (error) {
-                    status.style.color = 'var(--galbau-red)';
-                    status.innerText = "Mikrofon-Zugriff verweigert!";
-                }
-            }
-        };
-    </script>
-</body>
-</html>
