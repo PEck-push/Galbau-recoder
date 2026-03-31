@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Galbau | Voice</title>
+
+    <!-- Netlify Identity Widget -->
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
     <style>
         :root {
             --galbau-red: #D21E1E;
@@ -12,102 +16,204 @@
             --text-muted: #888888;
             --font-family: 'Helvetica Neue', Arial, sans-serif;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             font-family: var(--font-family);
             background-color: var(--bg-color);
             color: var(--text-main);
-            display: flex; flex-direction: column;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
             height: 100dvh;
             justify-content: space-between;
             padding: 8vh 6vw;
             -webkit-font-smoothing: antialiased;
         }
+
+        /* HEADER */
         header { text-align: left; }
-        h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.05em; text-transform: uppercase; margin-bottom: 5px; }
+        h1 {
+            font-size: 1.5rem; font-weight: 800;
+            letter-spacing: -0.05em; text-transform: uppercase;
+            margin-bottom: 5px;
+        }
         h1 span { color: var(--galbau-red); }
-        .subtitle { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-bottom: 15px; }
+        .subtitle {
+            font-size: 0.9rem; color: var(--text-muted);
+            font-weight: 500; margin-bottom: 15px;
+        }
+
+        /* USER INFO */
+        #userInfo {
+            display: none;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        #userInfo span { color: var(--text-main); font-weight: 600; }
+        #logoutBtn {
+            background: none; border: none;
+            color: var(--galbau-red); font-family: var(--font-family);
+            font-size: 0.8rem; cursor: pointer; padding: 0;
+            text-decoration: underline;
+        }
+
+        /* ANLEITUNG */
         #toggleRulesBtn {
-            background: none; border: none; color: var(--galbau-red);
-            font-family: var(--font-family); font-size: 0.9rem; font-weight: bold;
-            cursor: pointer; padding: 5px 0;
+            background: none; border: none;
+            color: var(--galbau-red); font-family: var(--font-family);
+            font-size: 0.9rem; font-weight: bold;
+            cursor: pointer; padding: 5px 0; text-align: left;
         }
         #rulesDiv {
-            margin-top: 15px; padding: 15px; background-color: #EFEFEF;
-            border-radius: 4px; font-size: 0.85rem; line-height: 1.5; display: none;
+            margin-top: 15px; padding: 15px;
+            background-color: #EFEFEF; border-radius: 4px;
+            font-size: 0.85rem; color: var(--text-main);
+            line-height: 1.5; display: none;
         }
         #rulesDiv h3 { font-size: 1rem; margin-bottom: 8px; }
         #rulesDiv ul { margin-left: 20px; }
         #rulesDiv li { margin-bottom: 5px; }
-        main { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+
+        /* MAIN */
+        main {
+            flex-grow: 1; display: flex;
+            flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+
         #recordBtn {
             width: 65vw; height: 65vw;
             max-width: 280px; max-height: 280px;
             border-radius: 50%;
             background-color: var(--text-main);
             color: var(--bg-color);
-            font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1em;
-            border: none; cursor: pointer;
+            font-size: 1.5rem; font-weight: 700;
+            letter-spacing: 0.1em; border: none; cursor: pointer;
             transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+        }
+        #recordBtn:disabled {
+            background-color: #CCCCCC;
+            cursor: default;
+            box-shadow: none;
         }
         #recordBtn.recording {
             background-color: var(--galbau-red);
             transform: scale(0.95);
             animation: pulse 2s infinite;
         }
-        #recordBtn:disabled { background-color: #CCCCCC; cursor: default; }
         @keyframes pulse {
-            0%   { box-shadow: 0 0 0 0 rgba(210,30,30,0.4); }
-            70%  { box-shadow: 0 0 0 30px rgba(210,30,30,0); }
-            100% { box-shadow: 0 0 0 0 rgba(210,30,30,0); }
+            0%   { box-shadow: 0 0 0 0 rgba(210, 30, 30, 0.4); }
+            70%  { box-shadow: 0 0 0 30px rgba(210, 30, 30, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(210, 30, 30, 0); }
         }
+
         #status {
-            margin-top: 40px; font-size: 1.1rem; font-weight: 500;
-            text-align: center; min-height: 60px;
+            margin-top: 40px; font-size: 1.1rem;
+            font-weight: 500; text-align: center;
+            min-height: 60px; color: var(--text-main);
         }
         #status.error { color: var(--galbau-red); }
-        footer { height: 20px; }
+
+        footer { width: 100%; height: 20px; }
     </style>
 </head>
 <body>
+
     <header>
         <h1>Galbau<span>.</span></h1>
         <div class="subtitle">Sprachprotokoll</div>
+
+        <!-- Wird nach Login eingeblendet -->
+        <div id="userInfo">
+            Eingeloggt als <span id="userEmail"></span> —
+            <button id="logoutBtn">Ausloggen</button>
+        </div>
+
         <button id="toggleRulesBtn">📖 Anleitung einblenden</button>
         <div id="rulesDiv">
             <h3>So funktioniert die Aufnahme</h3>
             <ul>
-                <li><strong>Natürlich sprechen:</strong> Nenne das Gewerk, dann die Aufgaben.</li>
-                <li><strong>Beispiel:</strong> <em>"Sanitärinstallationen der Siphon tropft Elektrikerarbeiten die Steckdose fehlt"</em></li>
+                <li><strong>Natürlich sprechen:</strong> Nenne das Gewerk, dann die Aufgaben. Das System sortiert alles automatisch.</li>
+                <li><strong>Beispiel:</strong> <em>"Sanitärinstallationen der Siphon tropft. Elektrikerarbeiten die Steckdose im Bad fehlt."</em></li>
                 <li><strong>Zulässige Gewerke:</strong> Elektrikerarbeiten, Sanitärinstallationen, Fliesenlegerarbeiten, Malerarbeiten, Anstreicharbeiten, Tischlerarbeiten, Bodenleger, diverse Arbeiten, Reinigung.</li>
             </ul>
         </div>
     </header>
 
     <main>
-        <button id="recordBtn">START</button>
-        <div id="status">Bereit. Sprich alle Gewerke ein.</div>
+        <button id="recordBtn" disabled>START</button>
+        <div id="status">Bitte einloggen.</div>
     </main>
 
     <footer></footer>
 
     <script>
-        // Webhook empfängt die Audiodatei — Whisper läuft in n8n via OpenAI
+        // ─── KONFIGURATION ────────────────────────────────────────────
+        // WICHTIG: /webhook/ nicht /webhook-test/ — sonst nur manueller Testmodus
         const WEBHOOK_URL = 'https://automations.solvid.ai/webhook/b256bc7a-cd19-4608-a493-cd0ac77dcdca';
+        // ─────────────────────────────────────────────────────────────
 
+        const btn        = document.getElementById('recordBtn');
+        const status     = document.getElementById('status');
+        const userInfo   = document.getElementById('userInfo');
+        const userEmail  = document.getElementById('userEmail');
+        const logoutBtn  = document.getElementById('logoutBtn');
         const toggleRulesBtn = document.getElementById('toggleRulesBtn');
-        const rulesDiv = document.getElementById('rulesDiv');
-        const btn = document.getElementById('recordBtn');
-        const status = document.getElementById('status');
+        const rulesDiv   = document.getElementById('rulesDiv');
 
+        // ─── NETLIFY IDENTITY ─────────────────────────────────────────
+        netlifyIdentity.on('init', user => {
+            if (!user) {
+                netlifyIdentity.open('login');
+                btn.disabled = true;
+                status.innerText = 'Bitte einloggen.';
+            } else {
+                onLogin(user);
+            }
+        });
+
+        netlifyIdentity.on('login', user => {
+            netlifyIdentity.close();
+            onLogin(user);
+        });
+
+        netlifyIdentity.on('logout', () => {
+            btn.disabled = true;
+            status.innerText = 'Ausgeloggt.';
+            status.className = '';
+            userInfo.style.display = 'none';
+            netlifyIdentity.open('login');
+        });
+
+        function onLogin(user) {
+            btn.disabled = false;
+            status.innerText = 'Bereit. Sprich alle Gewerke ein.';
+            status.className = '';
+            userEmail.innerText = user.email;
+            userInfo.style.display = 'block';
+        }
+
+        logoutBtn.addEventListener('click', () => netlifyIdentity.logout());
+        netlifyIdentity.init();
+        // ─────────────────────────────────────────────────────────────
+
+        // ─── ANLEITUNG ────────────────────────────────────────────────
         toggleRulesBtn.addEventListener('click', () => {
             const open = rulesDiv.style.display !== 'none';
             rulesDiv.style.display = open ? 'none' : 'block';
-            toggleRulesBtn.innerText = open ? '📖 Anleitung einblenden' : '📖 Anleitung ausblenden';
+            toggleRulesBtn.innerText = open
+                ? '📖 Anleitung einblenden'
+                : '📖 Anleitung ausblenden';
         });
+        // ─────────────────────────────────────────────────────────────
 
+        // ─── AUFNAHME & ÜBERTRAGUNG ───────────────────────────────────
         let recorder;
         let audioChunks = [];
 
@@ -122,22 +228,29 @@
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+
+                // Korrekten MIME-Type vom Browser abfragen — kein WAV forcieren
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+                    ? 'audio/webm'
+                    : 'audio/ogg';
+
                 recorder = new MediaRecorder(stream, { mimeType });
                 audioChunks = [];
 
                 recorder.ondataavailable = e => audioChunks.push(e.data);
 
                 recorder.onstop = async () => {
+                    // Mikrofon-Indikator im Browser erlöschen lassen
                     stream.getTracks().forEach(t => t.stop());
+
                     status.innerText = 'Wird übertragen...';
                     status.className = '';
 
                     const audioBlob = new Blob(audioChunks, { type: mimeType });
 
-                    // Audio direkt als Binary senden — n8n übernimmt Transkription
+                    // WICHTIG: 'data' muss mit "Input Data Field Name" im n8n OpenAI-Node übereinstimmen
                     const formData = new FormData();
-                    formData.append('audio', audioBlob, 'memo.webm');
+                    formData.append('data', audioBlob, 'memo.webm');
 
                     try {
                         const response = await fetch(WEBHOOK_URL, {
@@ -150,10 +263,13 @@
                         status.innerText = 'Erfolgreich übertragen!';
                         setTimeout(() => {
                             status.innerText = 'Bereit für das nächste Protokoll.';
+                            status.className = '';
                         }, 4000);
+
                     } catch (err) {
                         status.innerText = `Übertragung fehlgeschlagen: ${err.message}`;
                         status.className = 'error';
+                        console.error('Webhook-Fehler:', err);
                     }
 
                     btn.innerText = 'START';
@@ -168,20 +284,10 @@
             } catch (err) {
                 status.innerText = 'Mikrofon-Zugriff verweigert!';
                 status.className = 'error';
+                console.error('Mikrofon-Fehler:', err);
             }
         };
+        // ─────────────────────────────────────────────────────────────
     </script>
 </body>
 </html>
-```
-
----
-
-## Was in n8n jetzt dazukommt
-
-Der Webhook-Node muss auf **Binary Data** umgestellt werden, dann:
-```
-Webhook (Binary)
-→ OpenAI Node: Transcribe (Whisper-1, language: de)
-→ LLM-Node: Normalisierung in dein Zielformat (System Prompt von oben)
-→ dein Code-Node (unverändert)
