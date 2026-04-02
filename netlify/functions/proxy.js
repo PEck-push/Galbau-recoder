@@ -1,24 +1,20 @@
-const FormData = require('form-data');
-
 exports.handler = async (event) => {
+    const headers = { 'Access-Control-Allow-Origin': '*' };
+
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            },
-            body: ''
-        };
+        return { statusCode: 200, headers, body: '' };
     }
 
     try {
+        const body = event.isBase64Encoded
+            ? Buffer.from(event.body, 'base64')
+            : event.body;
+
         const response = await fetch(
             'https://automations.solvid.ai/webhook/b256bc7a-cd19-4608-a493-cd0ac77dcdca',
             {
                 method: 'POST',
-                body: event.body,
+                body: body,
                 headers: {
                     'Content-Type': event.headers['content-type'] || 'application/octet-stream'
                 }
@@ -27,13 +23,13 @@ exports.handler = async (event) => {
 
         return {
             statusCode: response.status,
-            headers: { 'Access-Control-Allow-Origin': '*' },
+            headers,
             body: await response.text()
         };
     } catch (err) {
         return {
             statusCode: 500,
-            headers: { 'Access-Control-Allow-Origin': '*' },
+            headers,
             body: JSON.stringify({ error: err.message })
         };
     }
